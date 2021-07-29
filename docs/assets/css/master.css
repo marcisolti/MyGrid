@@ -1,0 +1,47 @@
+@import url("https://fonts.googleapis.com/css2?family=Roboto+Mono:ital,wght@0,400;0,700;1,400&display=swap");
+* {
+  scroll-behavior: smooth;
+}
+
+img {
+  width: 100%;
+}
+
+body {
+  padding: 20px;
+  margin: auto;
+  width: 600px;
+  font-family: Roboto Mono;
+}
+
+h3, h2 {
+  margin: 0;
+}
+
+li {
+  padding: 2px;
+}
+
+ul {
+  margin-top: 2px;
+}
+
+.card {
+  background-color: #edf2f7;
+  padding: 40px;
+  margin: 35px 0;
+}
+.card h3 {
+  padding-bottom: 15px;
+}
+
+.eduInfo {
+  font-size: larger;
+  padding: 10px 0;
+}
+
+#intro {
+  font-size: larger;
+}
+
+/*# sourceMappingURL=master.css.map */

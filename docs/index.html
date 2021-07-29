@@ -1,0 +1,324 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>marci solti homework</title>
+    <link rel="stylesheet" href="./assets/css/master.css">
+</head>
+<body id="hi">
+    <a href="./assets/img/final.jpg">
+    <img src="./assets/img/final.jpg" alt="">
+    </a>
+    <p>
+    marci solti here. thanks for considering me as a candidate for the rendering team!
+    </p>
+    <p>
+    who would've thought that drawing antialiased lines is such a fun thing to do? it was a very educative exercise, and it definitely made me move out of my comfort zone. i really enjoyed figuring this stuff out, and i learnt a lot of new things.    
+    </p>
+    <p>
+    in this little html file, 
+    </p>
+    <ul>
+        <li>i'll first present YOU the core ideas of the application,</li>
+        <li>then list the solutions i ruled out</li>
+        <li>before settling on the final line drawing algorithm;</li>
+        <li>then i'll elaborate on the alpha blending options of this specific problem.</li>
+        <li>at last, i will give you a very brief guide about my implementation</li>
+
+    </ul>
+    <p>
+    
+    </p>
+    <h1>core ideas:</h1>
+    <ul>
+        <li>vertex buffer:</li>
+        <ul>
+            <li>line list positions at xyz</li>
+            <li>desired line thickness at w </li>
+        </ul>
+        <li>mvp transformation in vertex shader.</li>
+        <li>geometry shader:</li>
+        <ul>
+            <li>quad on each line, with constant width and desired thickness in screen space</li>
+            <li>'distance field' in uv</li>
+        </ul>
+        <li>pixel shader:</li>
+        <ul>
+            <li>sampling exponential distribution according to uv for antialiased line rasterization</li>
+            <li>basic exponential fog according to camera position</li>
+        </ul>
+        <li>tricks for proper alpha blending:</li>
+        <ul>
+            <li>add ± a very little number to y + add this number to the mvp transformed z again to solve depth issues</li>
+            <li>'tricky' line ordering</li>
+        </ul>
+    </ul>
+    <br>
+    <p>all of this are implemented in the uwp+dx11 sample. i tried to keep things simple, readable, correct and efficient; the draw call of my final implementation is around ~55-65&#181;s which <a href="https://en.wikipedia.org/wiki/Microsecond#Examples">feels ok</a>.
+    </p>
+    <p>
+    my testing rig was gtx 1060 3gb with i7 7700k at ~1080p.</p>
+    <br>
+    <a href="./assets/img/final_lower.png">
+    <img src="./assets/img/final_lower.png" alt="">
+    </a>
+    <br>
+    <p>
+    overall i'm really pleased with the result. it was already worth it to apply to the position :) 
+    </p>
+
+    <p>
+    the most important lessons for me are:
+    </p>
+    <ul>
+        <li>DO NOT assume. MEASURE!</li>
+        <li style="margin-bottom: 15px;">engineering ingenuity and math always wins <br> over micro-optimizations;</li>
+        <li>the geometry shader,</li>
+        <li>alpha blending,</li>
+        <li>
+            and anti-aliasing
+        </li>
+    </ul>
+    <p>are all very exciting topics and i should know more about them.</p>
+    <br>
+    <p>
+    you can find my implementation's visual studio project at ../MyGrid/MyGrid.sln; first let me present you what's not in there.
+    </p>
+    <h1>
+    other ideas i had:
+    </h1>
+    <div class="card">
+        <h2><u>textured quad</u></h2>
+            <p>i've got this idea back when i first tried shapr at an apple store: the horizon kind of looks like <a href="https://threejs.org/examples/?q=anis#webgl_materials_texture_anisotropy">this three.js example</a> about anistropic filtering.</p>
+            <a href="./assets/img/shpr_horizon.png">
+            <img src="./assets/img/shpr_horizon.png" alt="">
+            </a>
+            <p>
+            it has a very similar 'noisy pattern', so first i experimented with a textured quad with a grid texture i made in photoshop. here's the result:
+            </p>
+            <a href="./assets/img/textured_quad.png">
+            <img src="./assets/img/textured_quad.png" alt="">
+            </a>
+            <p>
+            not that bad if you ask me! also it was pretty educative to play with the sampler and alpha toggles. overall, it's
+            </p>
+            <ul>
+                <li>relatively cheap;</li>
+                <li>and it has pretty nice blending near the horizon.</li>
+                <li>however, the quality near the camera is unacceptable, and it's not 2 & 4px width</li>
+                <li>would be interesting to mix with my final solution</li>
+            </ul>
+        <h2><u>built-in line geometry</u></h2>
+            <p>
+            my next, not so educated guess was that it's just simply a rasterization of the 'linelist' primitive topology and some post process antialiasing. i implemented the grid drawing real quick
+            </p>
+            <a href="./assets/img/jaggy_line.png">
+            <img src="./assets/img/jaggy_line.png" alt="">
+            </a>
+            <p>
+            with an offscreen framebuffer to find out that this approach is not working at all:
+            </p>
+            <a href="./assets/img/jaggy_gauss.png">
+            <img src="./assets/img/jaggy_gauss.png" alt="">
+            </a>
+            <p>
+            it's because we smooth <i>after</i> rasterization - which creates a single pixel width line, either coloring the pixel or not - so some horizontal lines remain jaggy.
+            </p>
+            <p>
+            on the other hand, applying a gauss kernel is also super expensive: ~400 &#181;s / pass, so it's separable property is not that big of a help for us. 
+            </p>
+            <p>you can set an 'antialiased line' toggle in the rasterizer, however line drawing alone this way takes a truly remarkable 4-5 ms == 4-5000 &#181;s, so i ditched this option too.</p>
+
+        <h2 style="margin-bottom: 15px;"><u>thoughts i was having:</u></h2>
+            <ul>
+                <li>the line drawing algorithms i found - e.g. bresenham's and wu's - feels pretty awkward to implement on the gpu; especially for this many lines.</li>
+                <li>it cannot be quads in the vertex buffer, as it would be really weird to make them constant width.</li>
+                <li>as i did not have that many experiece with the geometry shader, it felt strange to draw quads on the lines every frame,</li>
+                <li>mostly because even if i do that, how do i make them smooth like in shapr3d? any kind of multisampling is so damn expensive; there must be a better way...</li>
+            </ul>
+    </div>
+
+
+    <h1>figuring out<br>the line drawing routine</h1>
+
+
+    <div class="card">
+        <p>my initial geometry shader implementation was pretty encouraging:</p>
+        <a href="./assets/img/depth_noperspective.png">
+        <img src="./assets/img/depth_noperspective.png" alt="">
+        </a>
+        <p>the constant line thickness wasn't implemented yet, and i also needed a cheap antialiasing solution.</p>
+        <p>in the meantime, i've got my hands on a windows beta. looking at your implementation closer was pretty enlightening.</p>
+        <a href="./assets/img/shapr_gaussian.png">
+        <img src="./assets/img/shapr_gaussian.png" alt="">
+        </a>
+        <p>ah-ha! it pretty much looks like what you would get if you would sweep a gaussian distribution through the lines. very interesting!</p> 
+        <p>i was also getting through this amazing gpu gems article, <a href="https://developer.nvidia.com/gpugems/gpugems2/part-iii-high-quality-rendering/chapter-22-fast-prefiltered-lines">fast prefiltered lines</a>. it looked really promising, but i couldn't figure out instantly how i could use this idea. 
+        </p>
+        <p>
+        this is the important picture from the paper:
+        </p>
+        <a href="./assets/img/convolution.png">
+        <img src="./assets/img/convolution.png" alt="">
+        </a>
+        <p>
+        the maximum intensity is when the sample is at the center of the line, and we reach 0 when the kernel's radius gets outside the thick line's width. 
+        </p>
+        <p>
+        how to implement this? while i was thinking about it, i was also googling rigorously, and found the <a href="https://atyuwen.github.io/posts/antialiased-line/">following blog post</a>. it ruined everything, because it was essentially the solution:</p>
+        <p>for the perspective corrected lines</p>
+        <ul>
+            <li>vertex shader mvp transformation of line topology,</li>
+            <li>clip lines at the near plane</li>
+            <li>and put quads on the lines doing some perspective correction trickery in x and y</li>
+        </ul>
+        <br>
+        <p>
+        this so far wasn't that big of a deal, i probably could've figured these out myself - ok, maybe not the near plane clipping :) - however, he also provided a pretty neat connection with the gpu gems article:  
+        </p>
+        <p>
+        what i discribed at the last figure is the definition of a distance field! we just need to store the distance from the center at the vertices, and the hardware automatically interpolates for us according to the pixel location; then all that's left is to sample our kernel of choice. 
+        </p>
+        <p>
+        this article uses a cone kernel - exp2(-2.7*x*x) - which i found satisfactory. would be interesting to try other solution like  in the original gpu gems paper. he also uses the noperspective specifier, what i also adopted.
+        </p>
+        <br>
+        <p>
+        my contribution to this code was putting the line thickness in the fourth component of the vertex buffer positions, to be able to draw the thick and the skinny lines in a single draw call. it's aint that much, but it's definitely something :)
+        </p>
+        <p>
+        at this point i thought i was done, however, i was about at half way :) alpha blending turned out to be pretty challenging too. 
+        </p>
+    </div>
+
+    <h1>solving the<br>blending issues</h1>
+    <div class="card">
+        <p>
+        being a bit more specific, this is the point where i was:
+        </p>
+        <a href="./assets/img/overdraw_1.png">
+        <img src="./assets/img/overdraw_1.png" alt="" >
+        </a>
+        <p>
+        super pretty lines up close, very weird issues in the back. it took me a lot of time to figure out that it's a classic overdraw issue, and this blending order problem - also in general - is very-not-trivial. 
+        </p>
+        <br>
+        <p>
+        so i found out i have to draw stuff from front to back. with a static camera from the specification, it's not that big of a deal, i just did this at first:
+        </p>
+        <a href="./assets/img/draworder_1.jpg">
+        <img style="width: 75%; margin: auto; display: block; padding: 25px; border-radius: 40px" src="./assets/img/draworder_1.jpg" alt="" >
+        </a>
+        <p>
+        plus added a little displacement - let's call it bias - to the vertices to not to be at 0, but at a very small number. 
+        </p>
+        <p>
+        this works, but when you start rotating the scene, the lines which were in the back are going to get to the front. this is a big problem; however, i managed to find a solution which works almost all the time while having zero effect on the run-time performance. 
+    </p>
+    <h2>
+        <u>line drawing order trick</u>
+    </h2>
+        <p>
+        first i was trying to do some flipping of the model matrix according to the rotation angle, but it didn't work. i observed though that the overdraw happens near the horizon, not close to the camera. this sparked the idea that i should do the drawing the following way:
+        </p>
+        <a href="./assets/img/draworder_2.jpg">
+        <img style="width: 100%; display: block;border-radius: 40px;" src="./assets/img/draworder_2.jpg" alt="" >
+        </a>
+        <p>
+        so we're always drawing from the edges inwards up to the center, because we're using perspective projection, and overdraw happens in the distance, not up close. 
+        </p>
+        <a href="./assets/img/draworder_3.jpg">
+        <img style="width: 80%; display: block; margin: auto; border-radius: 40px;" src="./assets/img/draworder_3.jpg" alt="" >
+        </a>
+        <p>
+        i was pretty proud that i figured this one out :)
+        </p>
+        <p>
+        however, it doesn't work all the time :( if you get super close to the ground and look at the horizon, the statement that no overdraw happens on the half of the plane that's closer to the camera doesn't stand: 
+        </p>
+        <a href="./assets/img/goodorder_nogood2.png">
+        <img src="./assets/img/goodorder_nogood2.png" alt="" >
+        </a>
+        <p>
+        and also if you draw a very dense grid, you get similar artifact:
+        </p>
+        <a href="./assets/img/goodorder_nogood1.png">
+        <img src="./assets/img/goodorder_nogood1.png" alt="" >
+        </a>
+        <p>
+        however, the extremes you can push this method is pretty satisfactory in my opinion:
+        </p>
+        <a href="./assets/img/densegrid.png">
+        <img src="./assets/img/densegrid.png" alt="" >
+        </a>
+        <a href="./assets/img/sparsegrid.png">
+        <img src="./assets/img/sparsegrid.png" alt="" >
+        </a>
+        <p>
+        next i'm going to present you a litte hack - a good kind of hack - which is necessary because of another hack - was also an ok hack imo. you can actually see the result on the last picture. 
+        </p>
+        <h2><u>depth hack</u></h2>
+        <p>
+        the last picture without this hack looked like this:
+        </p>
+        <a href="./assets/img/nodepthhack_notgood_1.png">
+        <img src="./assets/img/nodepthhack_notgood_1.png" alt="" >
+        </a>
+        <p>
+        pretty bad. as we get closer and closer to the ground, the little 'bias' we added to both set of lines, to be at -bias and bias instead of 0 is not enough to trick the depth test. we can increase the bias, but then we get into this situation:
+        </p>
+        <a href="./assets/img/nodepthhack_notgood_2.png">
+        <img src="./assets/img/nodepthhack_notgood_2.png" alt="" >
+        </a>
+        <p>
+        sure, the fog effect can solve this, but i the prefer the following solution: 
+        </p>
+        <p>
+        the bias gets into the vertex shader as position y, i transfrom the position then substract the bias from it, that is
+        <p>
+        output.pos.z += -2.f*input.y;
+        </p>
+        <p>
+        adding this line to the vertex shader eliminates the artifact:
+        </p>
+        <a href="./assets/img/sparsegrid.png">
+        <img src="./assets/img/sparsegrid.png" alt="" >
+        </a>        
+        <br>
+        <br>
+        <p>
+        wow! that was quite a ride! overall i'm pleased with the results, however, it bugs me that the effect breaks down very close to the ground :( i'm sure i could hack it, but i didn't come up with a unified solution... yet :)
+        </p>
+    </div>
+
+    <h1>finishing up, <br>implementation details</h1>
+    <div class="card">
+        <h2><u>adding the fog</u></h2>
+        <p>
+        finally something a didn't overthink :) i went with a simple exponential fog in the pixel shader. i could've done it in the geometry shader, but i didn't see any difference when i profiled it, and it also would've been linear interpolation.
+        </p>
+        <h2><u>about the project</u></h2>
+        <p>
+        i started from the uwp+dx11 template, what i didn't even know it existed. 
+        </p>
+        <p>
+        there was a lot of new interesting things in it - i'll definitely adopt stuff in my home engine - starting with uwp of course (i was a winapi+dx12 dude) but xmath library, ppl tasks, and also dx11 with its immediate mode was pretty nice thing to explore. 
+        </p>
+        <p>
+        i wanted the simplest implementation possible, so i ended up coding the whole thing in a single class, what you can find in ../MyGrid/Content/GridRenderer.h and GridRenderer.cpp; you can find *.hlsl files in this folder as well.
+        </p>
+        <p>
+        i think what needs to be explained is already pretty verbosely documented here. the code i think is pretty straightforward, there isn't that much added value to the sample code, so i omitted the comments like "Creating vertex buffer.", "Drawing grind.", etc...
+        </p>
+        <br>
+        <p>
+        i find the grid geometry creation a bit awkward but it's some pretty random logic so i didn't want to spend too much time optimizing it. i wanted to make it a constexpr function to be compile-time evaluated, but i just couldn't figure it out a clean way to do it, so i left it as it is. it's around ~10-20&#181;s, which doesn't feel much, but isn't this the spirit why photoshop takes forever to open? 
+        </p>
+        
+    </div>
+    <p>
+    thank YOU for going through this!<br>you can go back to the to by clicking <a href="#hi">here</a>.
+    </p>
+</body>
+</html>
