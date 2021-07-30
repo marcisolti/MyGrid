@@ -2,4 +2,4 @@
 
 This is my take on recreating Shapr3D's iconic infinite grid in DX11.
 
-You can find the docs at <https://marcisolti.github.io/MyGrid>.
+You can find the docs at <https://marcisolti.github.io/MyGrid> or in `./docs/index.html`.
